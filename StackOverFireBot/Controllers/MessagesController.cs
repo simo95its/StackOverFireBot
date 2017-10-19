@@ -4,8 +4,10 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Connector;
+using System;
+using System.Linq;
 
-namespace StackOverFireBot
+namespace Bot_Application
 {
     [BotAuthentication]
     public class MessagesController : ApiController
@@ -28,6 +30,7 @@ namespace StackOverFireBot
             return response;
         }
 
+        //Some parts of this method is for future bot's update
         private Activity HandleSystemMessage(Activity message)
         {
             if (message.Type == ActivityTypes.DeleteUserData)
@@ -40,6 +43,24 @@ namespace StackOverFireBot
                 // Handle conversation state changes, like members being added and removed
                 // Use Activity.MembersAdded and Activity.MembersRemoved and Activity.Action for info
                 // Not available in all channels
+                IConversationUpdateActivity update = message;
+                var client = new ConnectorClient(new Uri(message.ServiceUrl), new MicrosoftAppCredentials());
+                if (update.MembersAdded != null && update.MembersAdded.Any())
+                {
+                    foreach (var newMember in update.MembersAdded)
+                    {
+                        if (newMember.Id != message.Recipient.Id)
+                        {
+                            var reply = message.CreateReply();
+                            reply.Text = $"Welcome {newMember.Name}! " +
+                                "I'm StackOverFireBot! I answer you for every " +
+                                "question you're going to type me! Good luck! " +
+                                "(cards images are very slowly to upload 'cause " +
+                                "they are asynchrounous request. Be patient!)";
+                            client.Conversations.ReplyToActivityAsync(reply);
+                        }
+                    }
+                }
             }
             else if (message.Type == ActivityTypes.ContactRelationUpdate)
             {
@@ -53,7 +74,6 @@ namespace StackOverFireBot
             else if (message.Type == ActivityTypes.Ping)
             {
             }
-
             return null;
         }
     }
